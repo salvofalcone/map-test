@@ -1,0 +1,54 @@
+.card {
+  border: 1px solid black;
+  border-radius: 8px;
+  padding: 12px;
+  width: 300px;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.search {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  &__resultSection {
+    padding: 8px;
+    width: 50%;
+
+    &__resultItem {
+      padding: 4px;
+      cursor: pointer;
+      border: 1px solid grey;
+      width: fit-content;
+    }
+  }
+
+  &__bottom {
+    display: flex;
+    gap: 16px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+
+    &__selectionSection {
+      width: 50%;
+
+      &__selectedItem {
+        border: 2px solid red;
+        padding: 4px;
+      }
+    }
+  }
+
+  &__top {
+    border: 2px solid red;
+    padding: 12px;
+    display: flex;
+    gap: 32px;
+  }
+}
