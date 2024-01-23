@@ -1,9 +1,5 @@
-//! Sistemare commenti tutti in inglese
-
 //React
-import React, { useState } from "react";
-
-import startingData from "../../data/startingData.js";
+import React from "react";
 
 //React Leaflet
 import {
@@ -17,83 +13,28 @@ import {
   Tooltip,
 } from "react-leaflet";
 
+//redux
+import { useDispatch, useSelector } from "react-redux";
+import {
+  onHandleSelectPlant,
+  onSearchPlant,
+} from "./store/layeredMapActions.js";
+import { layeredMapActions } from "./store/layeredMapSlice.js";
+
 //Style
 import "leaflet/dist/leaflet.css";
 import style from "./LayeredMap.module.scss";
 
 const LayeredMap = () => {
-  const center = [41.5, 14]; //posizione centrale della mappa
-
-  //Data for the map rendering
-  const [plantsData, setPlantsData] = useState(startingData);
-
-  //Data for the search bar and the results of the search
-  const [searchData, setSearchData] = useState({
-    searchValue: "",
-    searchResults: [],
-    searchType: "PLANT",
-  });
-
-  //Plant choosen by the user
-  const [selectedPlant, setSelectedPlant] = useState();
-
-  /**
-   * This function handles the search of a plant based on the input value, updates value visualized in the input field and sets the value in the array searchData.
-   */
-  const onSearchPlant = (e) => {
-    const value = e.target.value;
-    const substring = value.toLowerCase();
-
-    setSearchData((prev) => ({ ...prev, searchValue: value }));
-
-    if (value.length >= 1) {
-      switch (searchData.searchType) {
-        //Ricerca impianto
-        case "PLANT":
-          const searchedPlants = plantsData.filter((plant) =>
-            plant.plant_name.includes(substring)
-          );
-
-          setSearchData((prev) => ({ ...prev, searchResults: searchedPlants }));
-          setSelectedPlant(null);
-          break;
-
-        //Ricerca pompa
-        case "PUMP":
-          const searchedPumps = plantsData
-            .map((plant) => plant.things)
-            .flat()
-            .filter((singlePump) => singlePump.thing_name.includes(substring));
-
-          setSearchData((prev) => ({ ...prev, searchResults: searchedPumps }));
-          console.log("🚀 ~ onSearchPlant ~ searchedPumps:", searchedPumps);
-          break;
-
-        default:
-          console.log("switch case - caso default - FIX IT!");
-          break;
-      }
-    } else {
-      setSearchData((prev) => ({ ...prev, searchResults: [] }));
-    }
-  };
-
-  /**
-   * This function sets the selected plant in the object searchData updating the status "isChecked" of the plant in the array plantsData and set the center of the map on the selected plant.
-   */
-  const onHandleSelectPlant = (plant) => {
-    setSelectedPlant(plant);
-
-    const updatedPlantsData = plantsData.map((el) => {
-      if (el.plant_id === plant.plant_id) {
-        return { ...el, isChecked: true };
-      } else {
-        return { ...el, isChecked: false };
-      }
-    });
-
-    setPlantsData(updatedPlantsData);
-  };
+  const dispatch = useDispatch();
+  const {
+    center,
+    plantsData,
+    searchResults,
+    searchType,
+    searchValue,
+    selectedPlant,
+  } = useSelector((state) => state.layeredMap);
 
   return (
     <div>
@@ -110,11 +51,7 @@ const LayeredMap = () => {
               checked={region.isChecked}>
               <LayerGroup>
                 {region.things.map((province, index) => (
-                  <Marker
-                    key={index}
-                    position={province.coordinates}
-                    /*    eventHandlers={{ click: (e) => getTargetData(e) }} */
-                  >
+                  <Marker key={index} position={province.coordinates}>
                     <Tooltip>{province.thing_name}</Tooltip>
                   </Marker>
                 ))}
@@ -129,10 +66,8 @@ const LayeredMap = () => {
           <input
             type="search"
             placeholder="Search plant's name..."
-            value={searchData.searchValue}
-            onChange={(e) => {
-              onSearchPlant(e);
-            }}
+            value={searchValue}
+            onChange={(e) => dispatch(onSearchPlant(e, searchType, plantsData))}
             className={style.search}
           />
 
@@ -142,9 +77,9 @@ const LayeredMap = () => {
               name="plant"
               id="plant"
               onChange={() => {
-                setSearchData((prev) => ({ ...prev, searchType: "PLANT" }));
+                dispatch(layeredMapActions.setSearchType("PLANT"));
               }}
-              checked={Boolean(searchData.searchType === "PLANT")}
+              checked={Boolean(searchType === "PLANT")}
             />
             <label htmlFor="plant">plant</label>
 
@@ -156,9 +91,9 @@ const LayeredMap = () => {
               id="pump"
               value="PUMP"
               onChange={() => {
-                setSearchData((prev) => ({ ...prev, searchType: "PUMP" }));
+                dispatch(layeredMapActions.setSearchType("PUMP"));
               }}
-              checked={Boolean(searchData.searchType === "PUMP")}
+              checked={Boolean(searchType === "PUMP")}
             />
             <label htmlFor="pump">pump</label>
           </div>
@@ -166,13 +101,13 @@ const LayeredMap = () => {
 
         {/* TODO sistemare chiave-valore dentro gli oggetti */}
         <div className={style.search__bottom}>
-          {searchData.searchResults.length > 0 ? (
+          {searchResults.length > 0 ? (
             <div className={style.search__resultSection}>
               <p>Hai cercato :</p>
-              {searchData.searchResults.map((el, index) => (
+              {searchResults.map((el, index) => (
                 <p
                   key={index}
-                  onClick={() => onHandleSelectPlant(el)}
+                  onClick={() => dispatch(onHandleSelectPlant(el, plantsData))}
                   className={style.search__resultSection__resultItem}>
                   {el?.plant_name}
                   {el?.thing_name}
