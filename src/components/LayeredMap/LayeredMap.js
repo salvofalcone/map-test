@@ -5,12 +5,11 @@ import React from "react";
 import {
   MapContainer,
   TileLayer,
-  /* Popup, */
   LayersControl,
   LayerGroup,
   Marker,
-  /* FeatureGroup, */
   Tooltip,
+  useMapEvents,
 } from "react-leaflet";
 
 //redux
@@ -27,6 +26,8 @@ import style from "./LayeredMap.module.scss";
 
 const LayeredMap = () => {
   const dispatch = useDispatch();
+
+  //stati iniziali presi dallo store
   const {
     center,
     plantsData,
@@ -36,29 +37,68 @@ const LayeredMap = () => {
     selectedPlant,
   } = useSelector((state) => state.layeredMap);
 
+  const GetCenterData = () => {
+    useMapEvents({
+      /*     dblclick: (e) => {
+        console.log("doppio click");
+      },
+
+      dragend: (e) => {
+        // const newCenter = e.target.getCenter();
+        // const bounds = e.target.getBounds();
+        // const oldCenter = e.target._lastCenter;
+        console.log("drag-end");
+      },
+
+      dragstart: (e) => {
+        console.log("drag-start");
+      }, */
+
+      moveend: (e) => {
+        const updatedDataInfo = {
+          newCenter: e.target.getCenter(),
+          bounds: e.target.getBounds(),
+          min: e.target.getBounds().getSouthWest(),
+          max: e.target.getBounds().getNorthEast(),
+        };
+
+        const visibleMarkers = plantsData.flatMap((plant) =>
+          plant.things.filter((pump) =>
+            updatedDataInfo.bounds.contains(pump.coordinates)
+          )
+        );
+
+        console.log("🚀 ~ GetCenterData ~ updatedDataInfo:", updatedDataInfo);
+        console.log("🚀 ~ GetCenterData ~ visibleMarkers:", visibleMarkers);
+      },
+    });
+    return null;
+  };
+
   return (
     <div>
-      <MapContainer center={center} zoom={6} scrollWheelZoom={false}>
+      <MapContainer center={center} zoom={8} scrollWheelZoom={false}>
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           detectRetina={false}
         />
         <LayersControl position="topright">
-          {plantsData.map((region) => (
+          {plantsData.map((plant) => (
             <LayersControl.Overlay
-              name={region.plant_name}
-              key={region.plant_id}
-              checked={region.isChecked}>
+              name={plant.plant_name}
+              key={plant.plant_id}
+              checked={plant.isChecked}>
               <LayerGroup>
-                {region.things.map((province, index) => (
-                  <Marker key={index} position={province.coordinates}>
-                    <Tooltip>{province.thing_name}</Tooltip>
+                {plant.things.map((pump, index) => (
+                  <Marker key={index} position={pump.coordinates}>
+                    <Tooltip>{pump.thing_name}</Tooltip>
                   </Marker>
                 ))}
               </LayerGroup>
             </LayersControl.Overlay>
           ))}
         </LayersControl>
+        <GetCenterData />
       </MapContainer>
 
       <div className={style.search}>
