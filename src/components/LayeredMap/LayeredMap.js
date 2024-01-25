@@ -1,5 +1,5 @@
 //React
-import React from "react";
+import React, { useState } from "react";
 
 //React Leaflet
 import {
@@ -36,6 +36,7 @@ const LayeredMap = () => {
     searchValue,
     selectedPlant,
   } = useSelector((state) => state.layeredMap);
+  const [visibleMarkers, setVisibleMarkers] = useState(plantsData);
 
   const GetCenterData = () => {
     useMapEvents({
@@ -62,14 +63,14 @@ const LayeredMap = () => {
           max: e.target.getBounds().getNorthEast(),
         };
 
-        const visibleMarkers = plantsData.flatMap((plant) =>
-          plant.things.filter((pump) =>
+        const visibleMarkers = plantsData.map((plant) => {
+          const filteredThings = plant.things.filter((pump) =>
             updatedDataInfo.bounds.contains(pump.coordinates)
-          )
-        );
+          );
+          return { ...plant, things: filteredThings };
+        });
 
-        console.log("🚀 ~ GetCenterData ~ updatedDataInfo:", updatedDataInfo);
-        console.log("🚀 ~ GetCenterData ~ visibleMarkers:", visibleMarkers);
+        setVisibleMarkers(visibleMarkers);
       },
     });
     return null;
@@ -83,7 +84,7 @@ const LayeredMap = () => {
           detectRetina={false}
         />
         <LayersControl position="topright">
-          {plantsData.map((plant) => (
+          {visibleMarkers.map((plant) => (
             <LayersControl.Overlay
               name={plant.plant_name}
               key={plant.plant_id}
@@ -107,7 +108,7 @@ const LayeredMap = () => {
             type="search"
             placeholder="Search plant's name..."
             value={searchValue}
-            onChange={(e) => dispatch(onSearchPlant(e, searchType, plantsData))}
+            onChange={(e) => dispatch(onSearchPlant(e, searchType, visibleMarkers))}
             className={style.search}
           />
 
