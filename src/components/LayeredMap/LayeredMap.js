@@ -1,14 +1,15 @@
 //React
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 //React Leaflet
 import {
-  MapContainer,
-  TileLayer,
   LayersControl,
   LayerGroup,
+  MapContainer,
   Marker,
+  TileLayer,
   Tooltip,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 
@@ -24,10 +25,9 @@ import { layeredMapActions } from "./store/layeredMapSlice.js";
 import "leaflet/dist/leaflet.css";
 import style from "./LayeredMap.module.scss";
 
+//TODO: add a description of the component
 const LayeredMap = () => {
   const dispatch = useDispatch();
-
-  //stati iniziali presi dallo store
   const {
     center,
     plantsData,
@@ -36,32 +36,19 @@ const LayeredMap = () => {
     searchValue,
     selectedPlant,
   } = useSelector((state) => state.layeredMap);
+
   const [visibleMarkers, setVisibleMarkers] = useState(plantsData);
 
   const GetCenterData = () => {
     useMapEvents({
-      /*     dblclick: (e) => {
-        console.log("doppio click");
-      },
-
-      dragend: (e) => {
-        // const newCenter = e.target.getCenter();
-        // const bounds = e.target.getBounds();
-        // const oldCenter = e.target._lastCenter;
-        console.log("drag-end");
-      },
-
-      dragstart: (e) => {
-        console.log("drag-start");
-      }, */
-
       moveend: (e) => {
         const updatedDataInfo = {
-          newCenter: e.target.getCenter(),
           bounds: e.target.getBounds(),
-          min: e.target.getBounds().getSouthWest(),
-          max: e.target.getBounds().getNorthEast(),
         };
+        console.log(
+          "🚀 ~ GetCenterData ~ updatedDataInfo.bounds:",
+          updatedDataInfo.bounds
+        );
 
         const visibleMarkers = plantsData.map((plant) => {
           const filteredThings = plant.things.filter((pump) =>
@@ -76,9 +63,45 @@ const LayeredMap = () => {
     return null;
   };
 
+  useEffect(() => {
+    console.log("sto montando");
+
+    const updatedDataInfo = {
+      bounds: {
+        _southWest: {
+          lat: 39,
+          lng: 13,
+        },
+        _northEast: {
+          lat: 42,
+          lng: 17,
+        },
+      },
+    };
+
+    //TODO: fix this function
+    const visibleMarkers = plantsData.map((plant) => {
+      const filteredThings = plant.things.filter(
+        (pump) =>
+          pump.coordinates.lat >= updatedDataInfo.bounds._southWest.lat &&
+          pump.coordinates.lat <= updatedDataInfo.bounds._northEast.lat &&
+          pump.coordinates.lng >= updatedDataInfo.bounds._southWest.lng &&
+          pump.coordinates.lng <= updatedDataInfo.bounds._northEast.lng
+      );
+      return { ...plant, things: filteredThings };
+    });
+
+    setVisibleMarkers(visibleMarkers);
+  }, []);
+
   return (
     <div>
-      <MapContainer center={center} zoom={8} scrollWheelZoom={false}>
+      <MapContainer
+        center={center}
+        zoom={8}
+        scrollWheelZoom={false}
+        /* whenReady={(e) => console.log(e.target)} */
+      >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           detectRetina={false}
@@ -108,7 +131,9 @@ const LayeredMap = () => {
             type="search"
             placeholder="Search plant's name..."
             value={searchValue}
-            onChange={(e) => dispatch(onSearchPlant(e, searchType, visibleMarkers))}
+            onChange={(e) =>
+              dispatch(onSearchPlant(e, searchType, visibleMarkers))
+            }
             className={style.search}
           />
 
